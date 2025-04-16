@@ -2,12 +2,14 @@
 const path = require('path')
 const {app, BrowserWindow, ipcMain, screen} = require('electron')
 const axios = require('axios');
+const uuid = require('uuid');
+const {isNil} = require("lodash");
 
 let notifications = [];
-const notificationHeight = 110;
-const notificationWidth = 380;
-const notificationGap = 3;
-const notificationLifeTime = 5000;
+const notificationHeight = 100;
+const notificationWidth = 300;
+const notificationGap = 1;
+const notificationLifeTime = 10000;
 
 async function downloadIconAsBase64(url) {
     const response = await axios.get(url, {responseType: 'arraybuffer'});
@@ -57,13 +59,23 @@ function animateMoveTo(win, targetY, duration = 120) {
 
 function repositionNotifications(startIndex) {
     for (let i = startIndex; i < notifications.length; i++) {
-        const win = notifications[i];
+        const win = notifications[i].window;
+        console.log(notifications[i]);
         if (!win.isDestroyed()) {
             const {width, height} = screen.getPrimaryDisplay().workAreaSize;
             const newY = height - ((notificationHeight + notificationGap) * (i + 1));
             animateMoveTo(win, newY);
         }
     }
+}
+
+function getWindowByUUID(uuid) {
+    const found = notifications.find(w => w.uuid === uuid);
+    if (found) {
+        const win = found.window;
+        if (!isNil(win)) return win;
+    }
+    return null;
 }
 
 function showCustomNotification() {
@@ -87,16 +99,28 @@ function showCustomNotification() {
             preload: path.join(__dirname, 'notifyPreload.js'),
         }
     })
+    const notificationUUID = uuid.v4()
 
-    notificationWindow.loadFile(path.join(__dirname, '/pages/notify.html'))
-    notifications.push(notificationWindow);
+    notificationWindow.loadFile(path.join(__dirname, '/pages/notify.html'));
+
+    const notificationObject = {
+        uuid: notificationUUID,
+        window: notificationWindow
+    };
+
+    notifications.push(notificationObject);
 
     const meta = {
-        title: "Sakura Books",
-        maxLength: notificationWidth,
-        description: "Bilim kurtak ochadigan sahifa!",
-        iconUrl: "https://picsum.photos/60/60",
-        lifeTime: "https://picsum.photos/60/60",
+        content: {
+            title: "Sakura Books",
+            description: "Bilim kurtak ochadigan sahifa!",
+            iconUrl: "https://picsum.photos/60/60",
+        },
+        style: {
+            maxLength: notificationWidth,
+        },
+        lifeTime: notificationLifeTime,
+        index: notificationUUID,
     };
 
     // Ikonkani yuklab olib base64 ga o‘giramiz
@@ -118,7 +142,9 @@ function showCustomNotification() {
     });
 
     notificationWindow.on('closed', () => {
-        const closedIndex = notifications.indexOf(notificationWindow);
+        console.log("closed");
+        const closedIndex = notifications.indexOf(notificationObject);
+        console.log("closedIndex",closedIndex);
         if (closedIndex !== -1) {
             notifications.splice(closedIndex, 1);
             repositionNotifications(closedIndex);
@@ -147,7 +173,16 @@ let i = 0;
 ipcMain.on('open-new-window', () => {
     showCustomNotification()
     i++
-})
+});
+
+ipcMain.on('close-notify', (event, index) => {
+    const notificationWin = getWindowByUUID(index);
+    console.log("close notification with index", index);
+    if (!isNil(notificationWin))
+        if (!notificationWin.isDestroyed()) {
+            notificationWin.close()
+        }
+});
 
 
 app.on('activate', () => {

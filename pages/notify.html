@@ -17,16 +17,18 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .close-btn {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: 4px;
+            right: 4px;
             background: transparent;
             border: none;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
             color: #aaa;
         }
+
         .close-btn:hover {
             color: #555;
         }
@@ -34,42 +36,80 @@
     <title>Desktop Notification</title>
 </head>
 <body style="margin: 0; font-family: Arial, sans-serif;  padding: 4px 4px 0 0; ">
+<div
+        style=" background: #eeeeee; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center;">
+    <button id="closeBtn" class="close-btn">×</button>
+    <div id="notification">
+        <div style="display: flex; align-items: center;">
+            <img id="icon" alt="Notification Icon"
+                 style="width: 60px; height: 60px; border-radius: 5px; object-fit: cover; margin-right: 15px;">
 
-<div id="notification"
-     style=" display: flex; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center;">
-    <button class="close-btn" onclick="document.getElementById('notification').style.display='none'">×</button>
-    <img id="icon" src="https://picsum.photos/60/60" alt="Notification Icon"
-         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
-
-    <div id="text-container" style="flex: 1;">
-        <div id="title" class="ellipsis-1-lines" style="font-size: 16px; font-weight: bold; color: #333;">New Message
-            Received
+            <div id="text-container" style="flex: 1;">
+                <div id="title" class="ellipsis-1-lines" style="font-size: 16px; font-weight: bold; color: #333;">New
+                    Message
+                    Received
+                </div>
+                <div id="desc" class="ellipsis-2-lines" style="font-size: 14px; color: #666; margin: 5px 0;">You have a
+                    new
+                    message from John Doe. Check your inbox!
+                </div>
+                <div id="link" style="font-size: 12px; color: #aaa;">Just now</div>
+            </div>
         </div>
-        <div id="desc" class="ellipsis-2-lines" style="font-size: 14px; color: #666; margin: 5px 0;">You have a new
-            message from John Doe. Check your inbox!
-        </div>
-        <div id="link" style="font-size: 12px; color: #aaa;">Just now</div>
+    </div>
+    <div style="margin-left: 2px; margin-right: 2px; background: #eee; border-radius: 10px; overflow: hidden;">
+        <div id="bar" style="width: 30%; height: 2px; background: green;"></div>
     </div>
 </div>
-<script>
-    window.electronAPI.onMetaData((event, meta) => {
-        document.title = meta.title;
-        document.getElementById("title").innerText = meta.title;
-        document.getElementById("desc").setHTMLUnsafe(meta.description);
-        document.getElementById("icon").setAttribute("src", meta.iconUrl);
 
-        const maxLength = meta.maxLength;
+
+<script>
+    const notification = document.getElementById('notification');
+    const textContainer = document.getElementById('text-container');
+    const closeBtn = document.getElementById('closeBtn');
+    const bar = document.getElementById("bar");
+    let duration = 5000; // 5 seconds
+    const steps = 2000;     // how many updates
+    let intervalTime = duration / steps; // 5000 / 100 = 50ms
+    let currentStep = 0;
+    electronAPI.onMetaData((event, meta) => {
+        document.title = meta.title;
+        document.getElementById("title").innerText = meta.content.title;
+        document.getElementById("desc").setHTMLUnsafe(meta.content.description);
+        document.getElementById("icon").setAttribute("src", meta.content.iconUrl);
+
+        closeBtn.setAttribute('notification-index', meta.index)
+
+        const maxLength = meta.style.maxLength;
+        duration = meta.lifeTime;
+        intervalTime = duration / steps; // 5000 / 100 = 50ms
+        updateCountdown();
+
         const padding = maxLength * 0.04; // 15.2
         const width = maxLength * 0.92;   // 349.6
         const textWidth = maxLength * 0.76;   // 288.8
-
-        const notification = document.getElementById('notification');
-        const textContainer = document.getElementById('text-container');
 
         notification.style.padding = padding + 'px';
         notification.style.width = width + 'px';
         textContainer.style.maxWidth = textWidth + 'px';
     });
+
+    closeBtn.addEventListener('click', (e) => {
+        const index = e.target.getAttribute('notification-index')
+        electronAPI.onCloseNotify(index)
+    })
+
+    function updateCountdown() {
+        const progress = 100 - (currentStep / steps) * 100;
+        bar.style.width = progress + "%";
+
+        if (currentStep < steps) {
+            currentStep++;
+            setTimeout(updateCountdown, intervalTime);
+        }
+    }
+
+
 </script>
 </body>
 </html>
