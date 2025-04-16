@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello Electron</title>
+</head>
+<body>
+<h1>🚀 Hello from Electron!</h1>
+<button type="button"  id="openBtn" >
+    Notify
+</button>
+<script>
+    document.getElementById('openBtn').addEventListener('click', () => {
+        window.electronAPI.openNewWindow()
+    })
+</script>
+</body>
+</html>

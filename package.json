@@ -1,0 +1,27 @@
+{
+  "name": "cusomt-notify1",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "asar": "^3.2.0",
+    "electron": "^34.2.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.1"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "axios": "^1.8.4",
+    "electron": "34.5.1",
+    "electron-settings": "^4.0.3",
+    "electron-store": "^8.1.0",
+    "lodash": "^4.17.21"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
