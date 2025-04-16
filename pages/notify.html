@@ -37,12 +37,12 @@
 </head>
 <body style="margin: 0; font-family: Arial, sans-serif;  padding: 4px 4px 0 0; ">
 <div
-        style=" background: #eeeeee; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center;">
+        style=" background: white; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center;">
     <button id="closeBtn" class="close-btn">×</button>
     <div id="notification">
         <div style="display: flex; align-items: center;">
-            <img id="icon" alt="Notification Icon"
-                 style="width: 60px; height: 60px; border-radius: 5px; object-fit: cover; margin-right: 15px;">
+            <img id="icon" src="https://picsum.photos/60/60" alt="Notification Icon"
+                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
 
             <div id="text-container" style="flex: 1;">
                 <div id="title" class="ellipsis-1-lines" style="font-size: 16px; font-weight: bold; color: #333;">New
@@ -69,14 +69,14 @@
     const closeBtn = document.getElementById('closeBtn');
     const bar = document.getElementById("bar");
     let duration = 5000; // 5 seconds
-    const steps = 2000;     // how many updates
+    const steps = 200;     // how many updates
     let intervalTime = duration / steps; // 5000 / 100 = 50ms
     let currentStep = 0;
     electronAPI.onMetaData((event, meta) => {
         document.title = meta.title;
         document.getElementById("title").innerText = meta.content.title;
         document.getElementById("desc").setHTMLUnsafe(meta.content.description);
-        document.getElementById("icon").setAttribute("src", meta.content.iconUrl);
+        document.getElementById("icon").setAttribute("src", meta.content.icon);
 
         closeBtn.setAttribute('notification-index', meta.index)
 
@@ -102,10 +102,12 @@
     function updateCountdown() {
         const progress = 100 - (currentStep / steps) * 100;
         bar.style.width = progress + "%";
-
         if (currentStep < steps) {
             currentStep++;
             setTimeout(updateCountdown, intervalTime);
+        }else {
+            const index = closeBtn.getAttribute('notification-index')
+            electronAPI.onCloseNotify(index)
         }
     }
 

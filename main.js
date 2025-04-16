@@ -4,12 +4,13 @@ const {app, BrowserWindow, ipcMain, screen} = require('electron')
 const axios = require('axios');
 const uuid = require('uuid');
 const {isNil} = require("lodash");
+const microtime = require('microtime');
 
 let notifications = [];
 const notificationHeight = 100;
-const notificationWidth = 300;
+const notificationWidth = 350;
 const notificationGap = 1;
-const notificationLifeTime = 10000;
+let notificationLifeTime = 10000;
 
 async function downloadIconAsBase64(url) {
     const response = await axios.get(url, {responseType: 'arraybuffer'});
@@ -78,7 +79,13 @@ function getWindowByUUID(uuid) {
     return null;
 }
 
-function showCustomNotification() {
+function getMicroTime() {
+    return microtime.now();
+}
+
+async function showCustomNotification(params) {
+    params.index = uuid.v4();
+
     const display = screen.getPrimaryDisplay()
     const {width, height} = display.workArea
     const index = notifications.length;
@@ -99,7 +106,10 @@ function showCustomNotification() {
             preload: path.join(__dirname, 'notifyPreload.js'),
         }
     })
-    const notificationUUID = uuid.v4()
+    console.log("notificationLifeTime1", notificationLifeTime)
+    const currentTime = getMicroTime();
+    const notificationUUID = params.index;
+    console.log("currentTime", performance.now());
 
     notificationWindow.loadFile(path.join(__dirname, '/pages/notify.html'));
 
@@ -110,41 +120,34 @@ function showCustomNotification() {
 
     notifications.push(notificationObject);
 
-    const meta = {
-        content: {
-            title: "Sakura Books",
-            description: "Bilim kurtak ochadigan sahifa!",
-            iconUrl: "https://picsum.photos/60/60",
-        },
-        style: {
-            maxLength: notificationWidth,
-        },
-        lifeTime: notificationLifeTime,
-        index: notificationUUID,
-    };
+    console.log("notificationUUID",notificationUUID)
 
     // Ikonkani yuklab olib base64 ga o‘giramiz
-    // meta.icon = await downloadIconAsBase64(meta.iconUrl);
+    // downloadIconAsBase64(params.content.iconUrl).then((base64) => {
+    //     params.content.icon = base64;
+    // }).finally(() => {
+    //     console.log("notificationLifeTime2", notificationLifeTime)
+    //     notificationWindow.webContents.send('set-meta', params);
+    //     notificationWindow.show()
+    // });
 
-    // Frontendga yuboramiz
-    notificationWindow.webContents.send('set-meta', meta);
-
+    notificationWindow.webContents.send('set-meta', params);
+    notificationWindow.show()
 
     notificationWindow.once('ready-to-show', () => {
-        notificationWindow.show()
-
-        // Auto-close after 5 seconds
+        const readyTime = getMicroTime();
+        notificationLifeTime -= (readyTime - currentTime) / 1000;
         setTimeout(() => {
             if (!notificationWindow.isDestroyed()) {
                 notificationWindow.close()
             }
-        }, notificationLifeTime)
+        }, notificationLifeTime * 1.5)
     });
 
     notificationWindow.on('closed', () => {
         console.log("closed");
         const closedIndex = notifications.indexOf(notificationObject);
-        console.log("closedIndex",closedIndex);
+        console.log("closedIndex", closedIndex);
         if (closedIndex !== -1) {
             notifications.splice(closedIndex, 1);
             repositionNotifications(closedIndex);
@@ -170,18 +173,35 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
 })
 let i = 0;
+
+const notifyParam = {
+    content: {
+        title: "Sakura Books",
+        description: "Bilim kurtak ochadigan sahifa!",
+        icon: "https://picsum.photos/60/60",
+    },
+    style: {
+        maxLength: notificationWidth,
+    },
+    lifeTime: notificationLifeTime,
+};
 ipcMain.on('open-new-window', () => {
-    showCustomNotification()
-    i++
+    showCustomNotification(notifyParam).then(() => {
+        i++
+    })
 });
 
 ipcMain.on('close-notify', (event, index) => {
     const notificationWin = getWindowByUUID(index);
     console.log("close notification with index", index);
     if (!isNil(notificationWin))
+    {
         if (!notificationWin.isDestroyed()) {
             notificationWin.close()
         }
+    }else {
+        console.log("not founded window", index);
+    }
 });
 
 

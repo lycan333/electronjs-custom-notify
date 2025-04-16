@@ -1,6 +1,6 @@
 {
   "name": "cusomt-notify1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -52,6 +52,7 @@
     "electron-settings": "^4.0.3",
     "electron-store": "^8.1.0",
     "lodash": "^4.17.21",
+    "microtime": "^3.1.1",
     "uid": "^2.0.2",
     "uuid": "^11.1.0"
   },
